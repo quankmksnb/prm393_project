@@ -34,7 +34,7 @@ class CartService {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',
           },
-          body: jsonEncode({'product': productId, 'quantity': quantity}),
+          body: jsonEncode({'productId': productId, 'quantity': quantity}),
         )
         .timeout(const Duration(seconds: ApiConstants.timeoutSeconds));
 
@@ -56,7 +56,7 @@ class CartService {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',
           },
-          body: jsonEncode({'product': productId, 'quantity': quantity}),
+          body: jsonEncode({'productId': productId, 'quantity': quantity}),
         )
         .timeout(const Duration(seconds: ApiConstants.timeoutSeconds));
 

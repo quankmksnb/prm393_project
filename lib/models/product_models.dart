@@ -50,14 +50,19 @@ class ProductModel {
     if (src is String) return src;
     if (src is Map) {
       // common keys
-      return (src['url'] ?? src['src'] ?? src['path'] ?? src['filename'] ?? '')
-          as String;
+      final candidate =
+          src['url'] ?? src['src'] ?? src['path'] ?? src['filename'] ?? '';
+      if (candidate is String) return candidate;
+      return candidate?.toString() ?? '';
     }
     if (src is List && src.isNotEmpty) {
       final first = src.first;
       if (first is String) return first;
-      if (first is Map)
-        return (first['url'] ?? first['src'] ?? first['path'] ?? '') as String;
+      if (first is Map) {
+        final candidate = first['url'] ?? first['src'] ?? first['path'] ?? '';
+        if (candidate is String) return candidate;
+        return candidate?.toString() ?? '';
+      }
     }
     return '';
   }
@@ -65,7 +70,11 @@ class ProductModel {
   static String _parseIdField(dynamic v) {
     if (v == null) return '';
     if (v is String) return v;
-    if (v is Map) return (v['_id'] ?? v['id'] ?? '') as String;
+    if (v is Map) {
+      final candidate = v['_id'] ?? v['id'] ?? '';
+      if (candidate is String) return candidate;
+      return candidate?.toString() ?? '';
+    }
     return v.toString();
   }
 }
@@ -86,11 +95,29 @@ class CartItemModel {
   });
 
   factory CartItemModel.fromJson(Map<String, dynamic> json) {
+    // `product` may be populated (object) or just an id string depending on backend.
+    final prod = json['product'] ?? json['productId'];
+    String productId = '';
+    String productName = json['productName'] ?? '';
+    double price = (json['price'] as num?)?.toDouble() ?? 0.0;
+    String image = json['image'] ?? '';
+
+    if (prod is String) {
+      productId = prod;
+    } else if (prod is Map<String, dynamic>) {
+      productId = (prod['_id'] ?? prod['id'] ?? '').toString();
+      productName = productName.isNotEmpty
+          ? productName
+          : (prod['name'] ?? '') as String;
+      price = (prod['price'] as num?)?.toDouble() ?? price;
+      image = ProductModel._parseImageField(prod['image']);
+    }
+
     return CartItemModel(
-      productId: json['product'] ?? json['productId'] ?? '',
-      productName: json['productName'] ?? '',
-      price: (json['price'] as num?)?.toDouble() ?? 0.0,
-      image: json['image'] ?? '',
+      productId: productId,
+      productName: productName,
+      price: price,
+      image: image,
       quantity: json['quantity'] ?? 1,
     );
   }
