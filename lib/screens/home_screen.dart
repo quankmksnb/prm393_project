@@ -26,17 +26,13 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadData();
+      final token = context.read<AuthProvider>().token;
+      if (token != null) {
+        context.read<ProductProvider>().fetchProducts();
+        context.read<ProductProvider>().fetchCategories();
+        context.read<CartProvider>().fetchCart(token);
+      }
     });
-  }
-
-  void _loadData() {
-    final token = context.read<AuthProvider>().token;
-    if (token != null) {
-      context.read<ProductProvider>().fetchProducts();
-      context.read<ProductProvider>().fetchCategories();
-      context.read<CartProvider>().fetchCart(token);
-    }
   }
 
   @override
@@ -79,12 +75,22 @@ class _ProductsPage extends StatefulWidget {
 }
 
 class _ProductsPageState extends State<_ProductsPage> {
+  final TextEditingController _searchController = TextEditingController();
+  String _selectedCategoryId = '';
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProductProvider>().fetchProducts();
+      context.read<ProductProvider>().fetchCategories();
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -127,9 +133,8 @@ class _ProductsPageState extends State<_ProductsPage> {
       ),
       body: Consumer<ProductProvider>(
         builder: (context, provider, _) {
-          if (provider.isLoading) {
+          if (provider.isLoading)
             return const Center(child: CircularProgressIndicator());
-          }
 
           if (provider.error != null) {
             return Center(
@@ -160,105 +165,189 @@ class _ProductsPageState extends State<_ProductsPage> {
             );
           }
 
-          return GridView.builder(
-            padding: const EdgeInsets.all(12),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 0.75,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: products.length,
-            itemBuilder: (context, index) {
-              final raw = products[index];
-              // defensive: convert if API returned raw maps
-              final product = raw is ProductModel
-                  ? raw
-                  : (raw is Map
-                        ? ProductModel.fromJson(
-                            Map<String, dynamic>.from(raw as Map),
-                          )
-                        : ProductModel(
-                            id: raw.toString(),
-                            name: raw.toString(),
-                            description: '',
-                            price: 0.0,
-                            image: '',
-                            categoryId: '',
-                            stock: 0,
-                            sellerId: '',
-                          ));
-              return GestureDetector(
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          ProductDetailScreen(productId: product.id),
+          final query = _searchController.text.trim().toLowerCase();
+          final filtered = products.where((p) {
+            final matchesCategory =
+                _selectedCategoryId.isEmpty ||
+                p.categoryId == _selectedCategoryId;
+            final matchesQuery =
+                query.isEmpty ||
+                p.name.toLowerCase().contains(query) ||
+                p.description.toLowerCase().contains(query);
+            return matchesCategory && matchesQuery;
+          }).toList();
+
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: AppLocalizations.of(
+                            context,
+                          ).translate('search'),
+                          prefixIcon: const Icon(Icons.search),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
                     ),
-                  );
-                },
-                child: Card(
-                  elevation: 2,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            image: DecorationImage(
-                              image: NetworkImage(
-                                product.image.isNotEmpty ? product.image : '',
-                              ),
-                              fit: BoxFit.cover,
-                              onError: (_, __) => const SizedBox(),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 150,
+                      child: DropdownButtonFormField<String>(
+                        value: _selectedCategoryId.isEmpty
+                            ? ''
+                            : _selectedCategoryId,
+                        decoration: InputDecoration(
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        items: [
+                          DropdownMenuItem(
+                            value: '',
+                            child: Text(
+                              AppLocalizations.of(context).translate('all'),
                             ),
                           ),
-                          child: product.image.isEmpty
-                              ? const Center(
-                                  child: Icon(Icons.image_not_supported),
+                          ...provider.categories.map(
+                            (c) => DropdownMenuItem(
+                              value: c.id,
+                              child: Text(c.name),
+                            ),
+                          ),
+                        ],
+                        onChanged: (v) =>
+                            setState(() => _selectedCategoryId = v ?? ''),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Expanded(
+                child: GridView.builder(
+                  padding: const EdgeInsets.all(12),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.75,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    final raw = filtered[index];
+                    final product = raw is ProductModel
+                        ? raw
+                        : (raw is Map
+                              ? ProductModel.fromJson(
+                                  Map<String, dynamic>.from(raw as Map),
                                 )
-                              : null,
+                              : ProductModel(
+                                  id: raw.toString(),
+                                  name: raw.toString(),
+                                  description: '',
+                                  price: 0.0,
+                                  image: '',
+                                  categoryId: '',
+                                  stock: 0,
+                                  sellerId: '',
+                                ));
+
+                    return GestureDetector(
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              ProductDetailScreen(productId: product.id),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.all(8),
+                      child: Card(
+                        elevation: 2,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              product.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
+                            Expanded(
+                              child: Container(
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[100],
+                                  image: DecorationImage(
+                                    image: NetworkImage(
+                                      product.image.isNotEmpty
+                                          ? product.image
+                                          : '',
+                                    ),
+                                    fit: BoxFit.cover,
+                                    onError: (_, __) => const SizedBox(),
+                                  ),
+                                ),
+                                child: product.image.isEmpty
+                                    ? const Center(
+                                        child: Icon(Icons.image_not_supported),
+                                      )
+                                    : null,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '₫${product.price.toStringAsFixed(0)}',
-                              style: const TextStyle(
-                                color: Colors.teal,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${AppLocalizations.of(context).translate('stock')}: ${product.stock}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
+                            Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    product.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '₫${product.price.toStringAsFixed(0)}',
+                                    style: const TextStyle(
+                                      color: Colors.teal,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${AppLocalizations.of(context).translate('stock')}: ${product.stock}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
-              );
-            },
+              ),
+            ],
           );
         },
       ),
@@ -266,6 +355,7 @@ class _ProductsPageState extends State<_ProductsPage> {
   }
 }
 
+// Orders page (kept as before)
 class _OrdersPage extends StatefulWidget {
   const _OrdersPage();
 
@@ -309,10 +399,8 @@ class _OrdersPageState extends State<_OrdersPage> {
       ),
       body: Consumer<OrderProvider>(
         builder: (context, orderProvider, _) {
-          if (orderProvider.isLoading) {
+          if (orderProvider.isLoading)
             return const Center(child: CircularProgressIndicator());
-          }
-
           if (orderProvider.orders.isEmpty) {
             return Center(
               child: Column(
@@ -397,13 +485,11 @@ class _OrdersPageState extends State<_OrdersPage> {
                                   vertical: 8,
                                 ),
                               ),
-                              onPressed: () {
-                                _showCancelDialog(
-                                  context,
-                                  order.id,
-                                  orderProvider,
-                                );
-                              },
+                              onPressed: () => _showCancelDialog(
+                                context,
+                                order.id,
+                                context.read<OrderProvider>(),
+                              ),
                               child: Text(
                                 AppLocalizations.of(
                                   context,
@@ -492,22 +578,19 @@ class _ProfilePage extends StatelessWidget {
       body: Consumer<AuthProvider>(
         builder: (context, authProvider, _) {
           final user = authProvider.user;
-
-          if (user == null) {
+          if (user == null)
             return Center(
               child: Text(
                 AppLocalizations.of(context).translate('user_not_found'),
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
             );
-          }
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // User Info Card
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -539,7 +622,6 @@ class _ProfilePage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                // Menu Items
                 Text(
                   AppLocalizations.of(context).translate('settings'),
                   style: Theme.of(context).textTheme.titleMedium,
@@ -553,14 +635,12 @@ class _ProfilePage extends StatelessWidget {
                     ).translate('delivery_addresses'),
                   ),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const AddressManagementScreen(),
-                      ),
-                    );
-                  },
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AddressManagementScreen(),
+                    ),
+                  ),
                 ),
                 ListTile(
                   leading: const Icon(Icons.settings),
@@ -568,15 +648,13 @@ class _ProfilePage extends StatelessWidget {
                     AppLocalizations.of(context).translate('settings'),
                   ),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          AppLocalizations.of(context).translate('coming_soon'),
-                        ),
+                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context).translate('coming_soon'),
                       ),
-                    );
-                  },
+                    ),
+                  ),
                 ),
                 ListTile(
                   leading: const Icon(Icons.help),
@@ -584,15 +662,13 @@ class _ProfilePage extends StatelessWidget {
                     AppLocalizations.of(context).translate('help_support'),
                   ),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          AppLocalizations.of(context).translate('coming_soon'),
-                        ),
+                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context).translate('coming_soon'),
                       ),
-                    );
-                  },
+                    ),
+                  ),
                 ),
                 ListTile(
                   leading: const Icon(Icons.privacy_tip),
@@ -600,18 +676,15 @@ class _ProfilePage extends StatelessWidget {
                     AppLocalizations.of(context).translate('privacy_policy'),
                   ),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          AppLocalizations.of(context).translate('coming_soon'),
-                        ),
+                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context).translate('coming_soon'),
                       ),
-                    );
-                  },
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 24),
-                // Logout Button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -621,14 +694,13 @@ class _ProfilePage extends StatelessWidget {
                     ),
                     onPressed: () async {
                       await authProvider.logout();
-                      if (context.mounted) {
+                      if (context.mounted)
                         Navigator.of(context).pushAndRemoveUntil(
                           MaterialPageRoute(
                             builder: (_) => const LoginScreen(),
                           ),
                           (route) => false,
                         );
-                      }
                     },
                     child: Text(
                       AppLocalizations.of(context).translate('logout'),
