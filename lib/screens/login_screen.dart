@@ -49,11 +49,25 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // show error message (from provider)
+    // show error message (from provider) with clearer localized text
     if (auth.error != null) {
+      final raw = auth.error!;
+      String display;
+      if (raw.contains('User not found')) {
+        display = AppLocalizations.of(context).translate('user_not_found');
+      } else if (raw.contains('Invalid credentials')) {
+        display = AppLocalizations.of(context).translate('invalid_credentials');
+      } else if (raw.contains('Account not verified') ||
+          raw.contains('blocked')) {
+        display = AppLocalizations.of(
+          context,
+        ).translate('account_not_verified');
+      } else {
+        display = raw.replaceFirst('Exception: ', '');
+      }
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(auth.error!)));
+      ).showSnackBar(SnackBar(content: Text(display)));
     }
   }
 
