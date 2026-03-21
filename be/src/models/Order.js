@@ -14,7 +14,11 @@ const orderSchema = new Schema(
     items: [orderItemSchema],
     totalAmount: { type: Number, required: true },
     deliveryAddress: { type: Schema.Types.ObjectId, ref: "DeliveryAddress" },
-    paymentMethod: { type: String, enum: ["COD", "PayPal"], default: "COD" },
+    paymentMethod: {
+      type: String,
+      enum: ["COD", "PayPal", "VNPay"],
+      default: "COD",
+    },
     status: {
       type: String,
       enum: ["pending", "confirmed", "delivering", "completed", "cancelled"],

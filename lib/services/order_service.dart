@@ -37,6 +37,54 @@ class OrderService {
     throw _parseError(response);
   }
 
+  Future<Map<String, dynamic>> createVNPayUrl({
+    required String token,
+    required String orderId,
+    required double amount,
+  }) async {
+    final uri = Uri.parse('${ApiConstants.baseUrl}/vnpay/create_payment_url');
+    final response = await http
+        .post(
+          uri,
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'orderId': orderId,
+            'amount': amount,
+          }),
+        )
+        .timeout(const Duration(seconds: ApiConstants.timeoutSeconds));
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    throw _parseError(response);
+  }
+
+  Future<Map<String, dynamic>> verifyVNPayReturn({
+    required String token,
+    required Map<String, String> vnpParams,
+  }) async {
+    final uri = Uri.parse('${ApiConstants.baseUrl}/vnpay/verify_return');
+    final response = await http
+        .post(
+          uri,
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode(vnpParams),
+        )
+        .timeout(const Duration(seconds: ApiConstants.timeoutSeconds));
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    throw _parseError(response);
+  }
+
   Future<List<OrderModel>> getUserOrders(String token) async {
     final uri = Uri.parse('$baseUrl/orders');
     final response = await http

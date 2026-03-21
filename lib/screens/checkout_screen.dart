@@ -7,6 +7,7 @@ import '../providers/address_provider.dart';
 import '../providers/order_provider.dart';
 import '../widgets/loading_indicator.dart';
 import '../l10n/app_localizations.dart';
+import 'vnpay_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -81,21 +82,52 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
       if (!mounted) return;
 
-      setState(() => _processingOrder = false);
+      if (_selectedPaymentMethod == 'VNPay') {
+        final orderData = result['order'];
+        final paymentUrl = await order.createVNPayUrl(
+          auth.token!,
+          orderData['_id'],
+          (orderData['totalAmount'] as num).toDouble(),
+        );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message'] ?? 'Đặt hàng thành công!'),
-          backgroundColor: Colors.teal,
-        ),
-      );
+        if (!mounted) return;
+        
+        final isSuccess = await Navigator.of(context).push<bool>(
+          MaterialPageRoute(
+            builder: (_) => VNPayScreen(paymentUrl: paymentUrl),
+          ),
+        );
+
+        setState(() => _processingOrder = false);
+
+        if (isSuccess == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Thanh toán VNPay thành công!'),
+              backgroundColor: Colors.teal,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Đã huỷ thanh toán VNPay! (Đơn hàng chờ xác nhận)'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      } else {
+        setState(() => _processingOrder = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Đặt hàng thành công!'),
+            backgroundColor: Colors.teal,
+          ),
+        );
+      }
 
       // Clear cart and navigate back
-      await Future.delayed(const Duration(seconds: 1));
-      if (mounted) {
-        await cart.fetchCart(auth.token!);
-        Navigator.of(context).popUntil((route) => route.isFirst);
-      }
+      await cart.fetchCart(auth.token!);
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
       if (mounted) {
         setState(() => _processingOrder = false);
@@ -262,8 +294,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           setState(() => _selectedPaymentMethod = value!),
                       title: Text(
                         AppLocalizations.of(context).translate('cod') ??
-                            'Cash on Delivery (COD)',
+                            'Thanh toán khi nhận hàng (COD)',
                       ),
+                    ),
+                  ),
+                  Card(
+                    child: RadioListTile<String>(
+                      value: 'VNPay',
+                      groupValue: _selectedPaymentMethod,
+                      onChanged: (value) =>
+                          setState(() => _selectedPaymentMethod = value!),
+                      title: const Text('Thanh toán ví VNPay'),
+                      secondary: const Icon(Icons.account_balance_wallet, color: Colors.blue),
                     ),
                   ),
                   Card(

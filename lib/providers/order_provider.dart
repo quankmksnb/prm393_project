@@ -47,6 +47,35 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
+  Future<String> createVNPayUrl(String token, String orderId, double amount) async {
+    try {
+      final res = await _orderService.createVNPayUrl(
+        token: token,
+        orderId: orderId,
+        amount: amount,
+      );
+      return res['paymentUrl'] as String;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<bool> verifyVNPayReturn(String token, Map<String, String> vnpParams) async {
+    try {
+      final res = await _orderService.verifyVNPayReturn(
+        token: token,
+        vnpParams: vnpParams,
+      );
+      if (res['success'] == true) {
+        await fetchUserOrders(token); // Refresh danh sách đơn hàng
+        return true;
+      }
+      return false;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> fetchUserOrders(String token) async {
     _isLoading = true;
     _error = null;

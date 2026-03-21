@@ -11,6 +11,7 @@ import orderRoutes from "./routes/orderRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import deliveryAddressRoutes from "./routes/deliveryAddressRoutes.js";
 import sellerRoutes from "./routes/sellerRoutes.js";
+import vnpayRoutes from "./routes/vnpayRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -29,6 +30,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/address", deliveryAddressRoutes);
 app.use("/api/seller", sellerRoutes);
+app.use("/api/vnpay", vnpayRoutes);
 
 // Root endpoint
 app.get("/", (req, res) => res.send("🍔 Foodify API is running..."));
