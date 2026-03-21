@@ -5,6 +5,9 @@ import '../providers/auth_provider.dart';
 import '../l10n/app_localizations.dart';
 import 'login_screen.dart';
 import 'address_management_screen.dart';
+import 'edit_profile_screen.dart';
+import 'chat_screen.dart';
+import '../constants/api_constants.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -17,12 +20,51 @@ class ProfileScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).translate('profile')),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_note),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Avatar Header
+            Center(
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundColor: Colors.teal[100],
+                    backgroundImage: user?.avatar != null ? NetworkImage(ApiConstants.getImageUrl(user!.avatar!)) : null,
+                    child: user?.avatar == null 
+                      ? const Icon(Icons.person, size: 50, color: Colors.teal)
+                      : null,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    user?.name ?? 'Unknown',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    user?.email ?? '',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+
             // User Info Card
             Card(
               child: Padding(
@@ -31,100 +73,29 @@ class ProfileScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      AppLocalizations.of(
-                            context,
-                          ).translate('user_information') ??
-                          'User Information',
+                      AppLocalizations.of(context).translate('user_information') ?? 'User Information',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        const Icon(Icons.person, color: Colors.teal),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                AppLocalizations.of(
-                                  context,
-                                ).translate('full_name'),
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              Text(
-                                user?.name ?? 'Unknown',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                    _buildInfoRow(
+                      Icons.person,
+                      AppLocalizations.of(context).translate('full_name'),
+                      user?.name ?? '-',
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        const Icon(Icons.email, color: Colors.teal),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                AppLocalizations.of(context).translate('email'),
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              Text(
-                                user?.email ?? '-',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                    _buildInfoRow(
+                      Icons.email,
+                      AppLocalizations.of(context).translate('email'),
+                      user?.email ?? '-',
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        const Icon(Icons.badge, color: Colors.teal),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                AppLocalizations.of(
-                                      context,
-                                    ).translate('role') ??
-                                    'Role',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              Text(
-                                user?.role ?? '-',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                    _buildInfoRow(
+                      Icons.phone,
+                      'Số điện thoại',
+                      user?.phone ?? 'Chưa cập nhật',
                     ),
                   ],
                 ),
@@ -144,6 +115,16 @@ class ProfileScreen extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (_) => const AddressManagementScreen(),
                   ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.chat_bubble, color: Colors.teal),
+              title: const Text('Chat với Chủ quán'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => ChatScreen()),
                 );
               },
             ),
@@ -221,6 +202,35 @@ class ProfileScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.teal),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                ),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

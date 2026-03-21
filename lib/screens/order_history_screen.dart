@@ -18,6 +18,16 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
     with WidgetsBindingObserver {
   bool _hasFetchedOnce = false;
 
+  String _selectedStatus = '';
+  final List<Map<String, String>> _statusFilters = [
+    {'value': '', 'label': 'Tất cả'},
+    {'value': 'pending', 'label': 'Chờ xác nhận'},
+    {'value': 'confirmed', 'label': 'Đã xác nhận'},
+    {'value': 'delivering', 'label': 'Đang giao'},
+    {'value': 'completed', 'label': 'Hoàn thành'},
+    {'value': 'cancelled', 'label': 'Đã huỷ'},
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -109,12 +119,17 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
       ),
       body: Consumer<OrderProvider>(
         builder: (context, provider, _) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+          final filteredOrders = provider.orders.where((o) {
+            if (_selectedStatus.isEmpty) return true;
+            return o.status == _selectedStatus;
+          }).toList();
 
-          if (provider.orders.isEmpty) {
-            return RefreshIndicator(
+          Widget content;
+
+          if (provider.isLoading) {
+            content = const Center(child: CircularProgressIndicator());
+          } else if (filteredOrders.isEmpty) {
+            content = RefreshIndicator(
               onRefresh: _fetchOrders,
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -131,35 +146,38 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          AppLocalizations.of(
-                            context,
-                          ).translate('no_orders'),
+                          _selectedStatus.isEmpty 
+                            ? AppLocalizations.of(context).translate('no_orders') 
+                            : 'Không có đơn hàng nào ở trạng thái này',
                         ),
                         const SizedBox(height: 24),
-                        ElevatedButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: Text(
-                            AppLocalizations.of(
-                              context,
-                            ).translate('start_shopping'),
+                        if (_selectedStatus.isEmpty)
+                          ElevatedButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: Text(
+                              AppLocalizations.of(context).translate('start_shopping'),
+                            ),
+                          )
+                        else
+                          OutlinedButton(
+                            onPressed: () => setState(() => _selectedStatus = ''),
+                            child: const Text('Xem tất cả đơn hàng'),
                           ),
-                        ),
                       ],
                     ),
                   ),
                 ],
               ),
             );
-          }
-
-          return RefreshIndicator(
-            onRefresh: _fetchOrders,
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: provider.orders.length,
-              itemBuilder: (context, index) {
-                final order = provider.orders[index];
-                final statusColor = _getStatusColor(order.status);
+          } else {
+            content = RefreshIndicator(
+              onRefresh: _fetchOrders,
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: filteredOrders.length,
+                itemBuilder: (context, index) {
+                  final order = filteredOrders[index];
+                  final statusColor = _getStatusColor(order.status);
 
                 return Card(
                   margin: const EdgeInsets.symmetric(
@@ -306,6 +324,45 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
                 );
               },
             ),
+          );
+        }
+
+          return Column(
+            children: [
+              Container(
+                height: 50,
+                margin: const EdgeInsets.only(top: 8, bottom: 4),
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: _statusFilters.length,
+                  itemBuilder: (ctx, i) {
+                    final filter = _statusFilters[i];
+                    final isSelected = _selectedStatus == filter['value'];
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(
+                          filter['label']!,
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : Colors.black87,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                        selected: isSelected,
+                        selectedColor: Colors.teal,
+                        onSelected: (selected) {
+                          if (selected) {
+                            setState(() => _selectedStatus = filter['value']!);
+                          }
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Expanded(child: content),
+            ],
           );
         },
       ),

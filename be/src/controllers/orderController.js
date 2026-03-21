@@ -94,16 +94,25 @@ export const updateOrderStatus = async (req, res) => {
       return res.status(400).json({ message: "Invalid status value" });
     }
 
-    // ✅ 2. Cập nhật đơn hàng
-    const order = await Order.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    ).populate("user", "name email");
-
+    // ✅ 2. Lấy đơn hàng hiện tại ra kiểm tra
+    const order = await Order.findById(req.params.id);
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
+
+    // Không cho phép đổi trạng thái nếu đơn đã huỷ hoặc đã hoàn thành
+    if (order.status === "cancelled" || order.status === "completed") {
+      return res.status(400).json({ 
+        message: `Cannot change status of a ${order.status} order` 
+      });
+    }
+
+    // ✅ 3. Cập nhật đơn hàng
+    order.status = status;
+    await order.save();
+    
+    // Populate để trả về kết quả chuẩn
+    await order.populate("user", "name email");
 
     // ✅ 3. Trả về dữ liệu
     res.status(200).json({

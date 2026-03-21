@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/order_provider.dart';
 import '../providers/product_provider.dart';
+import '../constants/api_constants.dart';
 import '../l10n/app_localizations.dart';
 import '../models/product_models.dart';
 import 'address_management_screen.dart';
@@ -12,6 +12,7 @@ import 'cart_screen.dart';
 import 'product_detail_screen.dart';
 import 'login_screen.dart';
 import 'order_history_screen.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -41,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final pages = [
       const _ProductsPage(),
       const OrderHistoryScreen(),
-      const _ProfilePage(),
+      const ProfileScreen(),
     ];
 
     return Scaffold(
@@ -211,6 +212,7 @@ class _ProductsPageState extends State<_ProductsPage> {
                     SizedBox(
                       width: 150,
                       child: DropdownButtonFormField<String>(
+                        isExpanded: true,
                         value: _selectedCategoryId.isEmpty
                             ? ''
                             : _selectedCategoryId,
@@ -234,7 +236,10 @@ class _ProductsPageState extends State<_ProductsPage> {
                           ...provider.categories.map(
                             (c) => DropdownMenuItem(
                               value: c.id,
-                              child: Text(c.name),
+                              child: Text(
+                                c.name,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ),
                         ],
@@ -294,9 +299,7 @@ class _ProductsPageState extends State<_ProductsPage> {
                                   color: Colors.grey[100],
                                   image: DecorationImage(
                                     image: NetworkImage(
-                                      product.image.isNotEmpty
-                                          ? product.image
-                                          : '',
+                                      ApiConstants.getImageUrl(product.image ?? 'https://via.placeholder.com/150')
                                     ),
                                     fit: BoxFit.cover,
                                     onError: (_, __) => const SizedBox(),
@@ -357,157 +360,4 @@ class _ProductsPageState extends State<_ProductsPage> {
 }
 
 
-class _ProfilePage extends StatelessWidget {
-  const _ProfilePage();
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context).translate('profile')),
-        centerTitle: true,
-      ),
-      body: Consumer<AuthProvider>(
-        builder: (context, authProvider, _) {
-          final user = authProvider.user;
-          if (user == null)
-            return Center(
-              child: Text(
-                AppLocalizations.of(context).translate('user_not_found'),
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-            );
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        CircleAvatar(
-                          radius: 40,
-                          child: Text(
-                            user.name.isNotEmpty
-                                ? user.name[0].toUpperCase()
-                                : '?',
-                            style: const TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          user.name,
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        Text(
-                          user.email,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  AppLocalizations.of(context).translate('settings'),
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                ListTile(
-                  leading: const Icon(Icons.location_on),
-                  title: Text(
-                    AppLocalizations.of(
-                      context,
-                    ).translate('delivery_addresses'),
-                  ),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const AddressManagementScreen(),
-                    ),
-                  ),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.settings),
-                  title: Text(
-                    AppLocalizations.of(context).translate('settings'),
-                  ),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        AppLocalizations.of(context).translate('coming_soon'),
-                      ),
-                    ),
-                  ),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.help),
-                  title: Text(
-                    AppLocalizations.of(context).translate('help_support'),
-                  ),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        AppLocalizations.of(context).translate('coming_soon'),
-                      ),
-                    ),
-                  ),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.privacy_tip),
-                  title: Text(
-                    AppLocalizations.of(context).translate('privacy_policy'),
-                  ),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        AppLocalizations.of(context).translate('coming_soon'),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    onPressed: () async {
-                      await authProvider.logout();
-                      if (context.mounted)
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                            builder: (_) => const LoginScreen(),
-                          ),
-                          (route) => false,
-                        );
-                    },
-                    child: Text(
-                      AppLocalizations.of(context).translate('logout'),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-}

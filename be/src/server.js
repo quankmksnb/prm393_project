@@ -12,14 +12,55 @@ import userRoutes from "./routes/userRoutes.js";
 import deliveryAddressRoutes from "./routes/deliveryAddressRoutes.js";
 import sellerRoutes from "./routes/sellerRoutes.js";
 import vnpayRoutes from "./routes/vnpayRoutes.js";
+import uploadRoutes from "./routes/uploadRoutes.js";
+import chatRoutes from "./routes/chatRoutes.js";
+import reviewRoutes from "./routes/reviewRoutes.js";
+import path from "path";
+import { createServer } from "http";
+import { Server } from "socket.io";
+import Message from "./models/Message.js";
 
 dotenv.config();
 connectDB();
 
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
+});
+
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
+
+// --- Socket.io Logic --- 
+io.on("connection", (socket) => {
+  console.log("⚡ User connected:", socket.id);
+
+  socket.on("join_room", (room) => {
+    socket.join(room);
+    console.log(`👤 User joined room: ${room}`);
+  });
+
+  socket.on("send_message", async (data) => {
+    const { sender, receiver, content, room } = data;
+    try {
+      const newMessage = await Message.create({ sender, receiver, content, room });
+      console.log(`📩 Message sent in room ${room}: ${content}`);
+      // Gửi tin nhắn đến mọi người trong phòng (bao gồm cả người gửi để sync UI)
+      io.to(room).emit("receive_message", newMessage);
+    } catch (error) {
+      console.error("❌ Socket error:", error);
+    }
+  });
+
+  socket.on("disconnect", () => {
+    console.log("🔥 User disconnected");
+  });
+});
 
 // API routes
 app.use("/api/auth", authRoutes);
@@ -31,9 +72,16 @@ app.use("/api/users", userRoutes);
 app.use("/api/address", deliveryAddressRoutes);
 app.use("/api/seller", sellerRoutes);
 app.use("/api/vnpay", vnpayRoutes);
+app.use("/api/upload", uploadRoutes);
+app.use("/api/chat", chatRoutes);
+app.use("/api/reviews", reviewRoutes);
+
+// Phục vụ file tĩnh trong thư mục uploads
+const __dirname = path.resolve();
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Root endpoint
 app.get("/", (req, res) => res.send("🍔 Foodify API is running..."));
 
 const PORT = process.env.PORT || 1612;
-app.listen(PORT, "0.0.0.0", () => console.log(`🚀 Server running on port ${PORT}`));
+httpServer.listen(PORT, "0.0.0.0", () => console.log(`🚀 Server running on port ${PORT}`));

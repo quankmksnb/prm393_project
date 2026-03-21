@@ -5,4 +5,13 @@ class ApiConstants {
 
   // Timeout for HTTP requests.
   static const timeoutSeconds = 15;
+
+  // Xử lý hiển thị ảnh Localhost cho máy ảo Android.
+  static String getImageUrl(String url) {
+    if (url.isEmpty) return '';
+    if (url.startsWith('http://localhost:1612')) {
+      return url.replaceFirst('http://localhost:1612', 'http://10.0.2.2:1612');
+    }
+    return url;
+  }
 }

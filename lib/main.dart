@@ -6,6 +6,8 @@ import 'providers/product_provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/order_provider.dart';
 import 'providers/address_provider.dart';
+import 'providers/chat_provider.dart';
+import 'providers/review_provider.dart';
 import 'screens/splash_screen.dart';
 import 'l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -26,6 +28,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => OrderProvider()),
         ChangeNotifierProvider(create: (_) => AddressProvider()),
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => ReviewProvider()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

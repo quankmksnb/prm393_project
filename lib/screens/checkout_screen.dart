@@ -33,24 +33,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   void _handlePaymentButton() {
-    if (_selectedPaymentMethod == 'PayPal') {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('PayPal'),
-          content: const Text(
-            'Thanh toán qua PayPal chưa được hỗ trợ. Vui lòng chọn thanh toán khi nhận hàng (COD).',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Đã hiểu'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
     _placeOrder();
   }
 
@@ -308,15 +290,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       secondary: const Icon(Icons.account_balance_wallet, color: Colors.blue),
                     ),
                   ),
-                  Card(
-                    child: RadioListTile<String>(
-                      value: 'PayPal',
-                      groupValue: _selectedPaymentMethod,
-                      onChanged: (value) =>
-                          setState(() => _selectedPaymentMethod = value!),
-                      title: Text('PayPal'),
-                    ),
-                  ),
                   const SizedBox(height: 24),
 
                   SizedBox(
@@ -333,7 +306,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       child: Text(
                         _selectedPaymentMethod == 'COD'
                             ? 'Xác nhận đặt hàng'
-                            : 'Thanh toán qua PayPal',
+                            : 'Thanh toán qua VNPay',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

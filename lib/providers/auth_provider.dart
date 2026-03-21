@@ -130,4 +130,32 @@ class AuthProvider extends ChangeNotifier {
     _status = AuthStatus.unauthenticated;
     notifyListeners();
   }
+
+  Future<void> updateProfile({
+    String? name,
+    String? phone,
+    String? avatar,
+  }) async {
+    if (_token == null) return;
+
+    _status = AuthStatus.loading;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final updatedUser = await _authService.updateProfile(
+        token: _token!,
+        name: name,
+        phone: phone,
+        avatar: avatar,
+      );
+      _user = updatedUser;
+      _status = AuthStatus.authenticated;
+    } catch (e) {
+      _error = e.toString();
+      _status = AuthStatus.authenticated; // Keep authenticated even if update fails
+    }
+
+    notifyListeners();
+  }
 }

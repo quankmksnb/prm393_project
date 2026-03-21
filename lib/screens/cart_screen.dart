@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/cart_provider.dart';
 import '../providers/auth_provider.dart';
+import '../constants/api_constants.dart';
 import 'checkout_screen.dart';
 import '../l10n/app_localizations.dart';
 
@@ -68,7 +69,7 @@ class CartScreen extends StatelessWidget {
                                   color: Colors.grey[100],
                                   borderRadius: BorderRadius.circular(8),
                                   image: DecorationImage(
-                                    image: NetworkImage(item.image),
+                                    image: NetworkImage(ApiConstants.getImageUrl(item.image)),
                                     fit: BoxFit.cover,
                                     onError: (_, __) => const SizedBox(),
                                   ),

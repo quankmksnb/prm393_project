@@ -98,7 +98,7 @@ export const verifyReturnUrl = async (req, res) => {
         // Cập nhật trạng thái đơn hàng thành 'confirmed' (Đã thanh toán / Xác nhận)
         const updatedOrder = await Order.findByIdAndUpdate(
           orderId, 
-          { status: 'confirmed', paymentMethod: 'VNPay' }, 
+          { status: 'confirmed', paymentMethod: 'VNPay', isPaid: true }, 
           { new: true }
         );
         

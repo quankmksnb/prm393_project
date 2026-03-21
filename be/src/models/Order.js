@@ -24,6 +24,10 @@ const orderSchema = new Schema(
       enum: ["pending", "confirmed", "delivering", "completed", "cancelled"],
       default: "pending",
     },
+    isPaid: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

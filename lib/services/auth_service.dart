@@ -98,6 +98,36 @@ class AuthService {
     await clearAuth();
   }
 
+  Future<UserModel> updateProfile({
+    required String token,
+    String? name,
+    String? phone,
+    String? avatar,
+  }) async {
+    final response = await _apiService.put(
+      '/users/update',
+      headers: {'Authorization': 'Bearer $token'},
+      body: jsonEncode({
+        if (name != null) 'name': name,
+        if (phone != null) 'phone': phone,
+        if (avatar != null) 'avatar': avatar,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final updatedUser = UserModel.fromJson(data['user']);
+      
+      // Update saved user in SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_userKey, jsonEncode(updatedUser.toJson()));
+      
+      return updatedUser;
+    }
+
+    throw _parseError(response);
+  }
+
   Exception _parseError(http.Response response) {
     try {
       final json = jsonDecode(response.body);
