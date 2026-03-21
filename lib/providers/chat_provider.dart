@@ -13,6 +13,9 @@ class ChatProvider with ChangeNotifier {
   final String sellerId = "69beb3837b07c84b78c93283"; // ID của Seller thực tế trong DB foodify
 
   void connect(String userId) {
+    // Tránh khởi tạo lại nếu socket đã tồn tại và đang kết nối
+    if (isConnected && socket.connected) return;
+
     socket = IO.io(ApiConstants.baseUrl.replaceAll('/api', ''), <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false,
@@ -32,10 +35,17 @@ class ChatProvider with ChangeNotifier {
       socket.emit('join_room', room);
     });
 
+    // Quan trọng: Sử dụng .off() để xóa listener cũ nếu có, tránh duplicate
+    socket.off('receive_message');
     socket.on('receive_message', (data) {
       final newMessage = MessageModel.fromJson(data);
-      messages.add(newMessage);
-      notifyListeners();
+      
+      // Kiểm tra xem tin nhắn đã có trong list chưa (dựa trên ID)
+      final exists = messages.any((m) => m.id == newMessage.id && m.id.isNotEmpty);
+      if (!exists) {
+        messages.add(newMessage);
+        notifyListeners();
+      }
     });
 
     socket.onDisconnect((_) {

@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 const { Schema } = mongoose;
 
 const orderItemSchema = new Schema({
+  productId: { type: Schema.Types.ObjectId, ref: "Product", required: true },
   productName: { type: String, required: true },
   image: { type: String },
   price: { type: Number, required: true },

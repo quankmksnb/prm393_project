@@ -147,12 +147,14 @@ class CartModel {
 }
 
 class OrderItemModel {
+  final String productId;
   final String productName;
   final String image;
   final double price;
   final int quantity;
 
   OrderItemModel({
+    required this.productId,
     required this.productName,
     required this.image,
     required this.price,
@@ -161,6 +163,7 @@ class OrderItemModel {
 
   factory OrderItemModel.fromJson(Map<String, dynamic> json) {
     return OrderItemModel(
+      productId: json['productId'] ?? '',
       productName: json['productName'] ?? '',
       image: json['image'] ?? '',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,

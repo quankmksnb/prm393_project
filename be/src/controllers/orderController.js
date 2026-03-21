@@ -33,6 +33,7 @@ export const checkout = async (req, res) => {
       await product.save();
 
       orderItems.push({
+        productId: product._id,
         productName: product.name,
         price: product.price,
         quantity: item.quantity,

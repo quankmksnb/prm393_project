@@ -1,4 +1,5 @@
 import express from "express";
+import mongoose from "mongoose";
 import { protect } from "../middleware/authMiddleware.js";
 import Review from "../models/Review.js";
 
@@ -8,6 +9,13 @@ const router = express.Router();
 router.post("/", protect, async (req, res) => {
   try {
     const { productId, rating, comment } = req.body;
+    
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ message: "Invalid Product ID" });
+    }
+
+    console.log("📝 New Review Request:", { productId, rating, comment, userId: req.user.id });
+    
     const review = await Review.create({
       user: req.user.id,
       product: productId,
@@ -18,6 +26,7 @@ router.post("/", protect, async (req, res) => {
     const populatedReview = await review.populate("user", "name avatar");
     res.status(201).json(populatedReview);
   } catch (error) {
+    console.error("❌ Post Review Error:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });

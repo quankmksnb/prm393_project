@@ -58,10 +58,10 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _isSubmitting ? null : _submitReview,
+                onPressed: (_isSubmitting || widget.productId.isEmpty) ? null : _submitReview,
                 child: _isSubmitting 
                   ? CircularProgressIndicator(color: Colors.white)
-                  : Text('Gửi đánh giá'),
+                  : Text(widget.productId.isEmpty ? 'Không thể đánh giá món này' : 'Gửi đánh giá'),
               ),
             ),
           ],

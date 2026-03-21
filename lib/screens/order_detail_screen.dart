@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/product_models.dart';
 import '../providers/auth_provider.dart';
 import '../providers/order_provider.dart';
+import 'add_review_screen.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   final OrderModel order;
@@ -143,7 +144,7 @@ class OrderDetailScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  ...order.items.map((item) => _OrderItemRow(item: item)),
+                  ...order.items.map((item) => _OrderItemRow(item: item, orderStatus: order.status)),
                   const Divider(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -324,25 +325,27 @@ class _InfoRow extends StatelessWidget {
 
 class _OrderItemRow extends StatelessWidget {
   final OrderItemModel item;
-  const _OrderItemRow({required this.item});
+  final String orderStatus;
+  const _OrderItemRow({required this.item, required this.orderStatus});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Ảnh sản phẩm (nếu có) hoặc placeholder
+          // Ảnh sản phẩm
           Container(
-            width: 54,
-            height: 54,
+            width: 60,
+            height: 60,
             decoration: BoxDecoration(
               color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: item.image.isNotEmpty
                 ? ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                     child: Image.network(
                       item.image,
                       fit: BoxFit.cover,
@@ -359,24 +362,60 @@ class _OrderItemRow extends StatelessWidget {
               children: [
                 Text(
                   item.productName,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   '₫${NumberFormat('#,###').format(item.price.toInt())} × ${item.quantity}',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     color: Colors.grey.shade600,
                   ),
                 ),
               ],
             ),
           ),
-          Text(
-            '₫${NumberFormat('#,###').format((item.price * item.quantity).toInt())}',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '₫${NumberFormat('#,###').format((item.price * item.quantity).toInt())}',
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.teal),
+              ),
+              if (orderStatus.toLowerCase() == 'completed')
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AddReviewScreen(
+                            productId: item.productId,
+                            productName: item.productName,
+                          ),
+                        ),
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      backgroundColor: Colors.orange.shade50,
+                      foregroundColor: Colors.orange,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'Đánh giá',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),
