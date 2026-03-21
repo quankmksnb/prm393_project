@@ -176,6 +176,7 @@ class OrderModel {
   final String status;
   final String paymentMethod;
   final DateTime? createdAt;
+  final DeliveryAddressModel? deliveryAddress;
 
   OrderModel({
     required this.id,
@@ -184,6 +185,7 @@ class OrderModel {
     required this.status,
     required this.paymentMethod,
     this.createdAt,
+    this.deliveryAddress,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -200,6 +202,11 @@ class OrderModel {
       paymentMethod: json['paymentMethod'] ?? 'COD',
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'].toString())
+          : null,
+      deliveryAddress: json['deliveryAddress'] != null &&
+              json['deliveryAddress'] is Map<String, dynamic>
+          ? DeliveryAddressModel.fromJson(
+              json['deliveryAddress'] as Map<String, dynamic>)
           : null,
     );
   }

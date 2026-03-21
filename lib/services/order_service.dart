@@ -24,7 +24,7 @@ class OrderService {
             'Content-Type': 'application/json',
           },
           body: jsonEncode({
-            'deliveryAddress': addressId,
+            'addressId': addressId,
             'paymentMethod': paymentMethod,
           }),
         )
@@ -44,8 +44,15 @@ class OrderService {
         .timeout(const Duration(seconds: ApiConstants.timeoutSeconds));
 
     if (response.statusCode == 200) {
-      final json = jsonDecode(response.body);
-      final data = (json['data'] ?? json) as List? ?? [];
+      final decoded = jsonDecode(response.body);
+      List<dynamic> data;
+      if (decoded is List) {
+        data = decoded;
+      } else if (decoded is Map<String, dynamic>) {
+        data = (decoded['data'] as List?) ?? [];
+      } else {
+        data = [];
+      }
       return data
           .map((item) => OrderModel.fromJson(item as Map<String, dynamic>))
           .toList();

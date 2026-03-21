@@ -31,15 +31,36 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     });
   }
 
-  Future<void> _placeOrder() async {
-    if (_selectedAddressId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context).translate('address') +
-                ' ' +
-                AppLocalizations.of(context).translate('error_generic'),
+  void _handlePaymentButton() {
+    if (_selectedPaymentMethod == 'PayPal') {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('PayPal'),
+          content: const Text(
+            'Thanh toán qua PayPal chưa được hỗ trợ. Vui lòng chọn thanh toán khi nhận hàng (COD).',
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Đã hiểu'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    _placeOrder();
+  }
+
+  Future<void> _placeOrder() async {
+    final effectiveAddressId =
+        _selectedAddressId ?? context.read<AddressProvider>().defaultAddress?.id;
+
+    if (effectiveAddressId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng chọn địa chỉ giao hàng'),
         ),
       );
       return;
@@ -54,7 +75,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
       final result = await order.checkout(
         token: auth.token!,
-        addressId: _selectedAddressId!,
+        addressId: effectiveAddressId,
         paymentMethod: _selectedPaymentMethod,
       );
 
@@ -64,7 +85,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result['message'] ?? 'Order placed successfully'),
+          content: Text(result['message'] ?? 'Đặt hàng thành công!'),
+          backgroundColor: Colors.teal,
         ),
       );
 
@@ -79,7 +101,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         setState(() => _processingOrder = false);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ).showSnackBar(SnackBar(
+          content: Text('Lỗi: $e'),
+          backgroundColor: Colors.red,
+        ));
       }
     }
   }
@@ -255,11 +280,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _placeOrder,
+                      onPressed: _handlePaymentButton,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor:
+                            _selectedPaymentMethod == 'COD'
+                                ? Colors.teal
+                                : Colors.blue,
+                      ),
                       child: Text(
-                        AppLocalizations.of(
-                          context,
-                        ).translate('proceed_checkout'),
+                        _selectedPaymentMethod == 'COD'
+                            ? 'Xác nhận đặt hàng'
+                            : 'Thanh toán qua PayPal',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),

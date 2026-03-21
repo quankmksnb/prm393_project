@@ -28,14 +28,15 @@ class AddressProvider extends ChangeNotifier {
 
     try {
       _addresses = await _addressService.getMyAddresses(token);
-      _defaultAddress = _addresses.firstWhere(
-        (a) => a.isDefault,
-        orElse: () => _addresses.isNotEmpty
-            ? _addresses.first
-            : throw Exception('No addresses'),
-      );
+      _defaultAddress = _addresses.isNotEmpty
+          ? _addresses.firstWhere(
+              (a) => a.isDefault,
+              orElse: () => _addresses.first,
+            )
+          : null;
     } catch (e) {
       _error = e.toString();
+      _addresses = [];
     }
 
     _isLoading = false;
