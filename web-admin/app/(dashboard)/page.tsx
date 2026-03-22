@@ -78,7 +78,7 @@ export default function DashboardPage() {
 
   if (!data) return <div className="p-8 text-center text-red-500">Không thể tải dữ liệu thống kê.</div>;
 
-  const { summary, dailyRevenue, statusBreakdown, topProducts } = data;
+  const { summary, dailyRevenue, statusBreakdown, topProducts, categoryRevenue } = data;
 
   const statCards = [
     { name: "Tổng doanh thu", value: `₫${summary.totalRevenue.toLocaleString()}`, sub: "Đơn đã thanh toán/hoàn tất", icon: DollarSign, color: "bg-green-100 text-green-600" },
@@ -113,9 +113,9 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Revenue Chart */}
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-2">
               <TrendingUp className="h-5 w-5 text-teal-600" />
@@ -155,21 +155,22 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Order Status Breakdown */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 text-center">
-           <div className="flex items-center justify-center space-x-2 mb-6 text-left">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-8">
+          {/* Order Status Breakdown */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center space-x-2 mb-6">
               <PieChartIcon className="h-5 w-5 text-purple-600" />
-              <h3 className="text-lg font-bold text-gray-900 w-full">Cơ cấu Trạng thái</h3>
+              <h3 className="text-lg font-bold text-gray-900">Trạng thái Đơn hàng</h3>
             </div>
-            <div className="h-[250px] flex items-center justify-center">
+            <div className="h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={statusBreakdown}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
+                    innerRadius={45}
+                    outerRadius={60}
                     paddingAngle={5}
                     dataKey="count"
                     nameKey="_id"
@@ -182,14 +183,52 @@ export default function DashboardPage() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="grid grid-cols-2 gap-2 mt-4 text-left">
+            <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4">
               {statusBreakdown.map((item: any, index: number) => (
-                <div key={item._id} className="flex items-center text-xs text-gray-500">
-                  <div className="w-3 h-3 rounded-full mr-2" style={{backgroundColor: COLORS[index % COLORS.length]}}></div>
-                  <span className="capitalize">{item._id}: {item.count}</span>
+                <div key={item._id} className="flex items-center text-[10px] text-gray-500 uppercase tracking-wider font-semibold">
+                  <div className="w-2.5 h-2.5 rounded-full mr-1.5" style={{backgroundColor: COLORS[index % COLORS.length]}}></div>
+                  <span>{item._id}: {item.count}</span>
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Revenue by Category */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center space-x-2 mb-6">
+              <PieChartIcon className="h-5 w-5 text-blue-600" />
+              <h3 className="text-lg font-bold text-gray-900">Doanh thu theo Danh mục</h3>
+            </div>
+            <div className="h-[200px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={categoryRevenue}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={45}
+                    outerRadius={60}
+                    paddingAngle={5}
+                    dataKey="revenue"
+                    nameKey="name"
+                  >
+                    {categoryRevenue.map((entry: any, index: number) => (
+                      <Cell key={`cell-cat-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: any) => `₫${value?.toLocaleString() || 0}`} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4">
+              {categoryRevenue.map((item: any, index: number) => (
+                <div key={item.name} className="flex items-center text-[10px] text-gray-500 uppercase tracking-wider font-semibold">
+                  <div className="w-2.5 h-2.5 rounded-full mr-1.5" style={{backgroundColor: COLORS[(index + 2) % COLORS.length]}}></div>
+                  <span>{item.name}: ₫{item.revenue.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 

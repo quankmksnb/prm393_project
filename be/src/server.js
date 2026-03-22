@@ -57,7 +57,6 @@ io.on("connection", (socket) => {
 
   socket.on("join_user", (userId) => {
     socket.join(`user_${userId}`);
-    console.log(`📡 User ${userId} joined their private Notification Room`);
   });
 
   socket.on("send_message", async (data) => {

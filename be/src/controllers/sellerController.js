@@ -138,7 +138,60 @@ export const getStatistics = async (req, res) => {
         }
       },
       { $sort: { totalQuantity: -1 } },
-      { $limit: 10 } // Increased to 10 for better view
+      { $limit: 10 }
+    ]);
+
+    // 5. Revenue by Category
+    const categoryRevenue = await Order.aggregate([
+      { 
+        $match: { 
+          $or: [{ status: "completed" }, { isPaid: true }],
+          createdAt: { $gte: startDate }
+        } 
+      },
+      { $unwind: "$items" },
+      {
+        $lookup: {
+          from: "products",
+          localField: "items.productId",
+          foreignField: "_id",
+          as: "productInfo"
+        }
+      },
+      { $unwind: { path: "$productInfo", preserveNullAndEmptyArrays: true } },
+      {
+        $addFields: {
+          "productInfo.category": {
+            $cond: {
+              if: { $eq: [{ $type: "$productInfo.category" }, "string"] },
+              then: { $toObjectId: "$productInfo.category" },
+              else: "$productInfo.category"
+            }
+          }
+        }
+      },
+      {
+        $group: {
+          _id: { $ifNull: ["$productInfo.category", "no_category"] },
+          revenue: { $sum: { $multiply: ["$items.price", "$items.quantity"] } }
+        }
+      },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "_id",
+          foreignField: "_id",
+          as: "categoryInfo"
+        }
+      },
+      { $unwind: { path: "$categoryInfo", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 0,
+          name: { $ifNull: ["$categoryInfo.name", "Khác/Chưa phân loại"] },
+          revenue: 1
+        }
+      }
     ]);
 
     res.status(200).json({
@@ -150,7 +203,8 @@ export const getStatistics = async (req, res) => {
       },
       dailyRevenue: dailyRevenueByDay,
       statusBreakdown,
-      topProducts
+      topProducts,
+      categoryRevenue
     });
   } catch (error) {
     console.error("Seller Stats Error:", error);

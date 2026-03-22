@@ -14,9 +14,6 @@ class ChatProvider with ChangeNotifier {
   final String sellerId = "69beb3837b07c84b78c93283"; // ID của Seller thực tế trong DB foodify
 
   void connect(String userId) {
-    print('🔌 ChatProvider: Connecting for user $userId');
-    
-    // Tránh khởi tạo lại nếu socket đã tồn tại
     if (!isConnected || !socket.connected) {
       socket = IO.io(ApiConstants.baseUrl.replaceAll('/api', ''), <String, dynamic>{
         'transports': ['websocket'],
@@ -26,15 +23,11 @@ class ChatProvider with ChangeNotifier {
       socket.connect();
 
       socket.onConnect((_) {
-        print('⚡ ChatProvider: Connected to Socket.io');
         isConnected = true;
         notifyListeners();
         
-        // Join private user room for notifications
-        print('📡 ChatProvider: Emitting join_user for ID: $userId');
         socket.emit('join_user', userId);
         
-        // Join chat room (room chung với seller)
         final ids = [userId, sellerId];
         ids.sort();
         final room = ids.join('_');
@@ -42,20 +35,15 @@ class ChatProvider with ChangeNotifier {
       });
 
       socket.onDisconnect((_) {
-        print('🔥 ChatProvider: Disconnected from Socket.io');
         isConnected = false;
         notifyListeners();
       });
     } else {
-      // Nếu đã kết nối, vẫn đảm bảo join room
-      print('📡 ChatProvider: Already connected, ensuring join_user for ID: $userId');
       socket.emit('join_user', userId);
     }
 
-    // Luôn cập nhật listeners để tránh bị stale hoặc mất listener
     socket.off('receive_message');
     socket.on('receive_message', (data) {
-      print('💬 ChatProvider: Received message');
       final newMessage = MessageModel.fromJson(data);
       final exists = messages.any((m) => m.id == newMessage.id && m.id.isNotEmpty);
       if (!exists) {
@@ -66,7 +54,6 @@ class ChatProvider with ChangeNotifier {
 
     socket.off('order_status_updated');
     socket.on('order_status_updated', (data) {
-      print('📦 ChatProvider: Received Order Status Update: $data');
       NotificationService.showNotification(
         id: DateTime.now().millisecond,
         title: 'Cập nhật đơn hàng!',

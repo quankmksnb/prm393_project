@@ -127,7 +127,6 @@ export const updateOrderStatus = async (req, res) => {
     if (io) {
        const userId = order.user._id ? order.user._id.toString() : order.user.toString();
        const userRoom = `user_${userId}`;
-       console.log(`Sending status update to room: ${userRoom}`);
        io.to(userRoom).emit("order_status_updated", {
          orderId: order._id,
          status: order.status,

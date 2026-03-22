@@ -35,7 +35,6 @@ class NotificationService {
       android: androidDetails,
     );
 
-    print('🔔 Attempting to show notification: $title - $body');
     await _notificationsPlugin.show(id, title, body, notificationDetails);
   }
 }
