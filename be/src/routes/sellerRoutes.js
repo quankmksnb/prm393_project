@@ -1,9 +1,13 @@
 // src/routes/sellerRoutes.js
 import express from "express";
 import { getAllOrders, getAllUsers, getOrderByIdBySeller, getStatistics } from "../controllers/sellerController.js";
+import { exportOrders } from "../controllers/reportController.js";
 import { protect, sellerOnly } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+
+// 🟢 Export dữ liệu đơn hàng sang CSV
+router.get("/export-orders", protect, sellerOnly, exportOrders);
 
 // 📦 Xem tất cả đơn hàng
 router.get("/orders", protect, sellerOnly, getAllOrders);

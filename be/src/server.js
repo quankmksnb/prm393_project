@@ -19,6 +19,13 @@ import path from "path";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import Message from "./models/Message.js";
+import rateLimit from "express-rate-limit";
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per `window` 
+  message: { message: "Too many requests from this IP, please try again after 15 minutes" }
+});
 
 dotenv.config();
 connectDB();
@@ -32,9 +39,12 @@ const io = new Server(httpServer, {
   },
 });
 
+app.set('io', io);
+
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
+app.use("/api", limiter);
 
 // --- Socket.io Logic --- 
 io.on("connection", (socket) => {
@@ -43,6 +53,11 @@ io.on("connection", (socket) => {
   socket.on("join_room", (room) => {
     socket.join(room);
     console.log(`👤 User joined room: ${room}`);
+  });
+
+  socket.on("join_user", (userId) => {
+    socket.join(`user_${userId}`);
+    console.log(`📡 User ${userId} joined their private Notification Room`);
   });
 
   socket.on("send_message", async (data) => {

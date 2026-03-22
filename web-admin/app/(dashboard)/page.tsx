@@ -9,7 +9,8 @@ import {
   Clock, 
   TrendingUp, 
   Award,
-  PieChart as PieChartIcon
+  PieChart as PieChartIcon,
+  Download
 } from "lucide-react";
 import {
   LineChart,
@@ -49,6 +50,22 @@ export default function DashboardPage() {
 
     fetchStats();
   }, [period]);
+  
+  const handleExport = async () => {
+    try {
+      const response = await api.get('/seller/export-orders', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'bao-cao-don-hang.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error("Export error:", error);
+      alert("Lỗi khi xuất báo cáo.");
+    }
+  };
 
   if (loading && !data) {
     return (
@@ -194,6 +211,13 @@ export default function DashboardPage() {
               <option value="week">7 ngày qua</option>
               <option value="month">30 ngày qua</option>
             </select>
+            <button 
+              onClick={handleExport}
+              className="flex items-center space-x-1 bg-teal-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors shadow-sm"
+            >
+              <Download className="h-4 w-4" />
+              <span>Xuất bản</span>
+            </button>
           </div>
         </div>
         

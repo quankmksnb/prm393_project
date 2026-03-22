@@ -55,6 +55,16 @@ export const checkout = async (req, res) => {
     cart.totalPrice = 0;
     await cart.save();
 
+    // 🔔 Real-time notification for Seller
+    const io = req.app.get('io');
+    if (io) {
+      io.emit("new_order", {
+        message: `Bạn có đơn hàng mới từ ${req.user.name || 'Khách hàng'}!`,
+        orderId: order._id,
+        totalAmount: order.totalAmount
+      });
+    }
+
     res.status(201).json({ message: "Order created successfully", order });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
@@ -111,6 +121,22 @@ export const updateOrderStatus = async (req, res) => {
     // ✅ 3. Cập nhật đơn hàng
     order.status = status;
     await order.save();
+    
+    // 🔔 Real-time notification for User
+    const io = req.app.get('io');
+    if (io) {
+       const userId = order.user._id ? order.user._id.toString() : order.user.toString();
+       const userRoom = `user_${userId}`;
+       console.log(`Sending status update to room: ${userRoom}`);
+       io.to(userRoom).emit("order_status_updated", {
+         orderId: order._id,
+         status: order.status,
+         message: `Đơn hàng #${order._id.toString().slice(-6)} của bạn đã chuyển sang: ${status}`
+       });
+       
+       // Test broadcast (optional for debugging)
+       // io.emit("order_status_updated", { message: "DEBUG: Cập nhật đơn hàng (Global Test)" });
+    }
     
     // Populate để trả về kết quả chuẩn
     await order.populate("user", "name email");

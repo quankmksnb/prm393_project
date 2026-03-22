@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/order_provider.dart';
@@ -13,6 +14,7 @@ import 'product_detail_screen.dart';
 import 'login_screen.dart';
 import 'order_history_screen.dart';
 import 'profile_screen.dart';
+import '../providers/chat_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -33,6 +35,12 @@ class _HomeScreenState extends State<HomeScreen> {
         context.read<ProductProvider>().fetchProducts();
         context.read<ProductProvider>().fetchCategories();
         context.read<CartProvider>().fetchCart(token);
+        
+        // 🟢 Kết nối socket để nhận thông báo thời gian thực
+        final user = context.read<AuthProvider>().user;
+        if (user != null) {
+          context.read<ChatProvider>().connect(user.id);
+        }
       }
     });
   }
@@ -135,8 +143,9 @@ class _ProductsPageState extends State<_ProductsPage> {
       ),
       body: Consumer<ProductProvider>(
         builder: (context, provider, _) {
-          if (provider.isLoading)
-            return const Center(child: CircularProgressIndicator());
+          if (provider.isLoading) {
+            return _buildShimmerLoading(context);
+          }
 
           if (provider.error != null) {
             return Center(
@@ -293,23 +302,26 @@ class _ProductsPageState extends State<_ProductsPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
-                              child: Container(
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[100],
-                                  image: DecorationImage(
-                                    image: NetworkImage(
-                                      ApiConstants.getImageUrl(product.image ?? 'https://via.placeholder.com/150')
+                              child: Hero(
+                                tag: 'product-image-${product.id}',
+                                child: Container(
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[100],
+                                    image: DecorationImage(
+                                      image: NetworkImage(
+                                        ApiConstants.getImageUrl(product.image ?? 'https://via.placeholder.com/150')
+                                      ),
+                                      fit: BoxFit.cover,
+                                      onError: (_, __) => const SizedBox(),
                                     ),
-                                    fit: BoxFit.cover,
-                                    onError: (_, __) => const SizedBox(),
                                   ),
+                                  child: product.image.isEmpty
+                                      ? const Center(
+                                          child: Icon(Icons.image_not_supported),
+                                        )
+                                      : null,
                                 ),
-                                child: product.image.isEmpty
-                                    ? const Center(
-                                        child: Icon(Icons.image_not_supported),
-                                      )
-                                    : null,
                               ),
                             ),
                             Padding(
@@ -355,6 +367,53 @@ class _ProductsPageState extends State<_ProductsPage> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildShimmerLoading(BuildContext context) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(12),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.75,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: 6,
+      itemBuilder: (context, index) {
+        return Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(height: 14, width: 100, color: Colors.white),
+                      const SizedBox(height: 8),
+                      Container(height: 14, width: 60, color: Colors.white),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/product_models.dart';
 import '../services/order_service.dart';
+import '../services/notification_service.dart';
 
 class OrderProvider extends ChangeNotifier {
   final OrderService _orderService;
@@ -36,6 +37,14 @@ class OrderProvider extends ChangeNotifier {
         addressId: addressId,
         paymentMethod: paymentMethod,
       );
+      
+      // 🟢 Thông báo đặt hàng thành công
+      await NotificationService.showNotification(
+        id: DateTime.now().millisecond,
+        title: 'Đặt hàng thành công! 🍔',
+        body: 'Đơn hàng của bạn đã được nhận và đang chờ xác nhận.',
+      );
+
       _isLoading = false;
       notifyListeners();
       return result;

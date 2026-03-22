@@ -111,15 +111,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 Container(
                   height: 300,
                   color: Colors.grey[100],
-                  child: product.image.isNotEmpty
-                      ? Image.network(
-                          ApiConstants.getImageUrl(product.image),
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Center(
-                            child: Icon(Icons.image_not_supported),
-                          ),
-                        )
-                      : const Center(child: Icon(Icons.image_not_supported)),
+                  child: Hero(
+                    tag: 'product-image-${product.id}',
+                    child: product.image.isNotEmpty
+                        ? Image.network(
+                            ApiConstants.getImageUrl(product.image),
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Center(
+                              child: Icon(Icons.image_not_supported),
+                            ),
+                          )
+                        : const Center(child: Icon(Icons.image_not_supported)),
+                  ),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(16),
